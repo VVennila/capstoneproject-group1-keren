@@ -28,6 +28,9 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
 
+    env:
+      REPO_NAME: ${{ secrets.REPO_NAME }}  # Assuming you've added this to your secrets in GitHub
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -43,8 +46,6 @@ jobs:
           aws-region: ap-southeast-1
 
       - name: Create ECR repository
-        env:
-          REPO_NAME: kerenp2014/capstoneproject-group1-dev  # Specify dev repository name
         run: |
           aws ecr create-repository --repository-name $REPO_NAME --region ap-southeast-1 || echo "Repository already exists"
 
@@ -54,12 +55,10 @@ jobs:
           docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-southeast-1.amazonaws.com
 
       - name: Build and push Docker image for both amd64 and arm64
-        env:
-          REPO_NAME: kerenp2014/capstoneproject-group1-dev  # Specify dev repository name
         run: |
           # Build and push the Docker image
           docker buildx build --platform linux/amd64,linux/arm64 \
-          -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-southeast-1.amazonaws.com/$REPO_NAME:dev \  # Use dev tag
+          -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-southeast-1.amazonaws.com/$REPO_NAME:dev \
           --push .
 
   deploy:
@@ -77,6 +76,6 @@ jobs:
       - name: Update ECS service
         run: |
           aws ecs update-service \
-            --cluster ce6-capstoneproject-group1 \
-            --service dev \  # Use dev service name
+            --cluster ce6-capstoneproject-group1-t \
+            --service dev \
             --force-new-deployment
